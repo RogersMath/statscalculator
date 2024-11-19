@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistics Calculator</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            line-height: 1.5;
+            color: #333;
+        }
+
+        textarea {
+            width: 100%;
+            height: 200px;
+            margin: 1rem 0;
+            padding: 0.5rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background: #0066cc;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0052a3;
+        }
+
+        .results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-top: 2rem;
+        }
+
+        .stat-box {
+            background: #f5f5f5;
+            padding: 1rem;
+            border-radius: 4px;
+        }
+
+        .stat-label {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .error {
+            color: #dc3545;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Statistics Calculator</h1>
+    <p>Enter or paste your numbers below (comma, tab, or space separated):</p>
+    <textarea id="dataInput" placeholder="Example: 1, 2, 3, 4, 5"></textarea>
+    <button onclick="calculateStats()">Calculate Statistics</button>
+    <div id="error" class="error"></div>
+    <div id="results" class="results"></div>
+
+    <script>
+        function parseInput(input) {
+            return input
+                .trim()
+                .split(/[\s,\t]+/)
+                .map(Number)
+                .filter(n => !isNaN(n));
+        }
+
+        function mean(arr) {
+            return arr.reduce((a, b) => a + b) / arr.length;
+        }
+
+        function median(arr) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            const mid = Math.floor(sorted.length / 2);
+            return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+        }
+
+        function mode(arr) {
+            const freq = {};
+            arr.forEach(num => freq[num] = (freq[num] || 0) + 1);
+            const maxFreq = Math.max(...Object.values(freq));
+            return Object.keys(freq)
+                .filter(key => freq[key] === maxFreq)
+                .map(Number);
+        }
+
+        function variance(arr) {
+            const m = mean(arr);
+            return mean(arr.map(x => Math.pow(x - m, 2)));
+        }
+
+        function standardDeviation(arr) {
+            return Math.sqrt(variance(arr));
+        }
+
+        function quartile(arr, q) {
+            const sorted = [...arr].sort((a, b) => a - b);
+            const pos = (sorted.length - 1) * q;
+            const base = Math.floor(pos);
+            const rest = pos - base;
+            if (sorted[base + 1] !== undefined) {
+                return sorted[base] + rest * (sorted[base + 1] - sorted[base]);
+            } else {
+                return sorted[base];
+            }
+        }
+
+        function displayStat(label, value) {
+            const box = document.createElement('div');
+            box.className = 'stat-box';
+            box.innerHTML = `
+                <div class="stat-label">${label}</div>
+                <div class="stat-value">${typeof value === 'number' ? value.toFixed(2) : value}</div>
+            `;
+            return box;
+        }
+
+        function calculateStats() {
+            const input = document.getElementById('dataInput').value;
+            const error = document.getElementById('error');
+            const results = document.getElementById('results');
+            results.innerHTML = '';
+            error.textContent = '';
+
+            const numbers = parseInput(input);
+
+            if (numbers.length < 2) {
+                error.textContent = 'Please enter at least 2 valid numbers';
+                return;
+            }
+
+            const sorted = [...numbers].sort((a, b) => a - b);
+            const stats = {
+                'Mean': mean(numbers),
+                'Median': median(numbers),
+                'Mode': mode(numbers).join(', '),
+                'Range': sorted[sorted.length - 1] - sorted[0],
+                'Midrange': (sorted[sorted.length - 1] + sorted[0]) / 2,
+                'Standard Deviation': standardDeviation(numbers),
+                'Variance': variance(numbers),
+                'Minimum': sorted[0],
+                'Q1': quartile(numbers, 0.25),
+                'Q3': quartile(numbers, 0.75),
+                'Maximum': sorted[sorted.length - 1],
+                'IQR': quartile(numbers, 0.75) - quartile(numbers, 0.25)
+            };
+
+            Object.entries(stats).forEach(([label, value]) => {
+                results.appendChild(displayStat(label, value));
+            });
+        }
+    </script>
+</body>
+</html>
